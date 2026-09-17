@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>纽约 · 9月17–19日</title>
+<meta name="color-scheme" content="light dark">
+<style>
+/* ============================================================
+   设计基调：纽约地铁指示系统
+   黑底白字、线路色圆牌、等宽数字时刻表。
+   全部系统字体，零外部依赖，离线可用。
+   ============================================================ */
+
+:root{
+  --bg:#ffffff;
+  --ink:#000000;
+  --dim:#6b6b6b;
+  --hair:#d8d8d8;
+  --panel:#f4f4f4;
+  --panel2:#eaeaea;
+
+  /* MTA 线路色 */
+  --l4:#00933c;    /* 4/6 号线 绿 */
+  --l1:#ee352e;    /* 1/2/3 号线 红 */
+  --lnr:#fccc0a;   /* N/R/W 黄 */
+  --le:#0039a6;    /* E 线 蓝 */
+  --lbdfm:#ff6319; /* B/D/F/M 橙 —— 风险标记 */
+  --lg:#6cbe45;    /* G 绿 —— 已完成/已出票 */
+
+  --onyellow:#000;
+}
+
+:root:not([data-theme="light"]){
+  @media (prefers-color-scheme: dark){
+    --bg:#000000;
+    --ink:#ffffff;
+    --dim:#9a9a9a;
+    --hair:#2e2e2e;
+    --panel:#141414;
+    --panel2:#1e1e1e;
+  }
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#000000;
+    --ink:#ffffff;
+    --dim:#9a9a9a;
+    --hair:#2e2e2e;
+    --panel:#141414;
+    --panel2:#1e1e1e;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#000000;
+  --ink:#ffffff;
+  --dim:#9a9a9a;
+  --hair:#2e2e2e;
+  --panel:#141414;
+  --panel2:#1e1e1e;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,Arial,
+              "PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  font-size:16px;
+  line-height:1.62;
+  letter-spacing:.005em;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:660px;margin:0 auto;padding:0 18px 72px}
+
+/* ---------- 顶栏 ---------- */
+.topbar{
+  display:flex;align-items:baseline;justify-content:space-between;
+  gap:12px;padding:22px 0 14px;
+}
+.brand{font-size:15px;font-weight:700;letter-spacing:.02em}
+.brand span{color:var(--dim);font-weight:400}
+.themebtn{
+  appearance:none;border:1.5px solid var(--ink);background:transparent;color:var(--ink);
+  font:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;
+  cursor:pointer;white-space:nowrap;
+}
+.themebtn:focus-visible{outline:3px solid var(--lnr);outline-offset:2px}
+
+/* ---------- 此刻关注 ---------- */
+.now{
+  background:var(--ink);color:var(--bg);
+  border-radius:14px;padding:20px 20px 22px;margin:2px 0 30px;
+}
+.now-kicker{font-size:12px;font-weight:700;opacity:.62;margin-bottom:9px}
+.now-title{font-size:23px;font-weight:700;line-height:1.28;margin:0 0 3px}
+.now-meta{font-size:13.5px;opacity:.7;margin-bottom:17px}
+.clock{display:flex;gap:9px}
+.unit{
+  flex:1;background:rgba(127,127,127,.22);border-radius:9px;
+  padding:9px 4px 8px;text-align:center;
+}
+.unit b{
+  display:block;font-size:31px;font-weight:700;line-height:1.06;
+  font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;
+}
+.unit i{display:block;font-style:normal;font-size:10.5px;opacity:.62;margin-top:3px}
+.now-foot{font-size:12px;opacity:.6;margin-top:13px}
+
+/* ---------- 区块 ---------- */
+section{margin:0 0 40px;scroll-margin-top:16px}
+h2{
+  font-size:13px;font-weight:700;margin:0 0 4px;
+  display:flex;align-items:center;gap:8px;
+}
+h2::after{content:"";flex:1;height:1px;background:var(--hair)}
+.sub{font-size:13px;color:var(--dim);margin:0 0 16px}
+
+/* ---------- 线路圆牌 ---------- */
+.bullet{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:19px;height:19px;border-radius:50%;
+  font-size:11.5px;font-weight:700;color:#fff;flex:none;
+  vertical-align:-3px;
+}
+.b4,.b6{background:var(--l4)}
+.b1,.b2{background:var(--l1)}
+.bnr{background:var(--lnr);color:var(--onyellow)}
+.be{background:var(--le)}
+.bbus{background:#4d5357;border-radius:4px;width:auto;padding:0 6px;font-size:10.5px}
+
+/* ---------- 风险卡 ---------- */
+.risk{
+  border-left:4px solid var(--hair);
+  padding:2px 0 2px 14px;margin:0 0 20px;
+}
+.risk.hot{border-left-color:var(--lbdfm)}
+.risk.warn{border-left-color:var(--lnr)}
+.risk.ok{border-left-color:var(--lg)}
+.risk h3{font-size:15.5px;font-weight:700;margin:0 0 5px;line-height:1.4}
+.risk p{margin:0 0 7px;font-size:14.5px}
+.risk p:last-child{margin-bottom:0}
+.risk .fix{color:var(--dim);font-size:13.5px}
+.tag{
+  display:inline-block;font-size:10.5px;font-weight:700;
+  padding:1.5px 7px;border-radius:4px;margin-right:7px;vertical-align:1.5px;
+}
+.t-hot{background:var(--lbdfm);color:#fff}
+.t-warn{background:var(--lnr);color:var(--onyellow)}
+.t-ok{background:var(--lg);color:#fff}
+
+/* ---------- 路线图 ---------- */
+.maproll{margin:0 0 10px}
+.maproll h3{font-size:15px;font-weight:700;margin:22px 0 2px}
+.maproll .legs{font-size:12.5px;color:var(--dim);margin:0 0 8px}
+svg.route{display:block;width:100%;height:auto;overflow:visible}
+.navbtn{
+  display:block;width:100%;text-align:center;text-decoration:none;
+  border:1.5px solid var(--ink);color:var(--ink);
+  font-size:13.5px;font-weight:700;padding:11px;border-radius:10px;margin-top:4px;
+}
+.navbtn:focus-visible{outline:3px solid var(--lnr);outline-offset:2px}
+
+/* ---------- 票务 ---------- */
+.tk{
+  background:var(--panel);border-radius:12px;padding:14px 15px;margin:0 0 11px;
+}
+.tk-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.tk-name{font-size:15.5px;font-weight:700;margin:0}
+.tk-when{
+  font-size:13.5px;font-variant-numeric:tabular-nums;color:var(--dim);
+  white-space:nowrap;
+}
+.tk-line{font-size:13.5px;color:var(--dim);margin:5px 0 0}
+.tk-line a{color:var(--ink)}
+.st{font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;display:inline-block}
+.st-done{background:var(--lg);color:#fff}
+.st-todo{background:var(--lbdfm);color:#fff}
+.st-chk{background:var(--lnr);color:var(--onyellow)}
+
+/* ---------- 逐日行程 ---------- */
+.day{margin:0 0 30px}
+.day-h{
+  display:flex;align-items:baseline;justify-content:space-between;
+  gap:10px;padding:0 0 9px;border-bottom:2px solid var(--ink);margin-bottom:4px;
+}
+.day-h b{font-size:18px}
+.day-h span{font-size:12.5px;color:var(--dim);text-align:right}
+
+ol.tl{list-style:none;margin:0;padding:0}
+ol.tl li{
+  display:grid;grid-template-columns:54px 1fr;gap:12px;
+  padding:11px 0;border-bottom:1px solid var(--hair);
+}
+ol.tl li:last-child{border-bottom:none}
+.t{
+  font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;
+  padding-top:1px;
+}
+.t.soft{font-weight:400;color:var(--dim)}
+.c strong{display:block;font-size:15.5px;font-weight:700;line-height:1.42}
+.c p{margin:3px 0 0;font-size:13.5px;color:var(--dim)}
+.c a.pin{color:var(--ink);text-decoration:none;border-bottom:1.5px solid var(--hair)}
+.c a.pin:active{border-bottom-color:var(--ink)}
+.flag{
+  display:inline-block;font-size:10.5px;font-weight:700;
+  padding:1px 6px;border-radius:4px;margin-top:5px;
+}
+.f-book{background:var(--lbdfm);color:#fff}
+.f-close{background:var(--lnr);color:var(--onyellow)}
+.f-core{background:var(--ink);color:var(--bg)}
+
+/* ---------- 待办 / 贴士 ---------- */
+ul.plain{margin:0;padding:0;list-style:none}
+ul.plain li{
+  padding:10px 0 10px 20px;border-bottom:1px solid var(--hair);
+  font-size:14.5px;position:relative;
+}
+ul.plain li:last-child{border-bottom:none}
+ul.plain li::before{
+  content:"";position:absolute;left:2px;top:19px;
+  width:7px;height:7px;border-radius:50%;background:var(--ink);
+}
+ul.plain li b{font-weight:700}
+ul.plain li em{font-style:normal;color:var(--dim);display:block;font-size:13px;margin-top:2px}
+
+.tip{margin:0 0 17px}
+.tip h3{font-size:15px;font-weight:700;margin:0 0 4px}
+.tip p{margin:0;font-size:14.5px;color:var(--dim)}
+.tip p b{color:var(--ink);font-weight:700}
+
+footer{
+  border-top:1px solid var(--hair);padding-top:16px;
+  font-size:12px;color:var(--dim);line-height:1.7;
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="topbar">
+  <div class="brand">纽约 <span>· 2026年9月17–19日 · 美东时间</span></div>
+  <button class="themebtn" id="tbtn" type="button">切换配色</button>
+</div>
+
+<!-- ========== 1. 此刻关注 ========== -->
+<div class="now">
+  <div class="now-kicker">下一站</div>
+  <h1 class="now-title" id="nx-title">行程已结束</h1>
+  <div class="now-meta" id="nx-meta"></div>
+  <div class="clock">
+    <div class="unit"><b id="cd-d">0</b><i>天</i></div>
+    <div class="unit"><b id="cd-h">00</b><i>时</i></div>
+    <div class="unit"><b id="cd-m">00</b><i>分</i></div>
+    <div class="unit"><b id="cd-s">00</b><i>秒</i></div>
+  </div>
+  <div class="now-foot">全页时间均为美东时间（EDT，UTC−4）。底特律与纽约同时区，无需换算。</div>
+</div>
+
+<!-- ========== 2. 行前必读 ========== -->
+<section>
+  <h2>行前必读</h2>
+  <p class="sub">核查日期 9月16日。以下七条会实际影响行程，按紧急程度排。</p>
+
+  <div class="risk hot">
+    <h3><span class="tag t-hot">今天到期</span>酒店免退窗口今天关闭</h3>
+    <p>Hotel 365 Bronx 的免费取消截止到 <b>9月16日</b>，也就是今天。过了今晚这笔 $395.47 就锁死了。</p>
+    <p class="fix">现在只剩一个动作：确认不改行程，然后放着不动。</p>
+  </div>
+
+  <div class="risk hot">
+    <h3><span class="tag t-hot">必须确认</span>回程是否已改到周六</h3>
+    <p>原票是周日 9/20 的 DL308。全部行程按 <b>周六 9/19 14:55 DL308</b> 排的。如果改签没点完，周六这一天整个作废，而且你会在纽约多一晚没有住宿。</p>
+    <p class="fix">打开 Delta App 看确认号 G3W4DT 的回程日期。不是 9/19 就立刻改。</p>
+  </div>
+
+  <div class="risk warn">
+    <h3><span class="tag t-warn">新增一站</span>San Gennaro 百年庆典 9/17 开幕，就在 Stüssy 门口</h3>
+    <p>第 100 届 San Gennaro 节 <b>9月17日至27日</b>，Mulberry 街从 Canal 到 Houston 全线封街，每天 11:30–23:30。Stüssy 在 Prince 街和 Mulberry 交口，正好压在节庆北端。</p>
+    <p>周四傍晚是开幕日的工作日时段，是整个节庆人最少的窗口之一；周五周六晚上才是高峰。已经把它排成周四正式一站。</p>
+    <p class="fix">不收门票。<b>带现金</b>，相当一部分摊位只收现金，附近 ATM 晚上会排队。地铁走 Prince St <span class="bullet bnr">N</span> 或 Spring St <span class="bullet b6">6</span>，两站都会比平时挤。</p>
+  </div>
+
+  <div class="risk warn">
+    <h3><span class="tag t-warn">周六注意</span>联合国大会安保从 9/19 开始布设</h3>
+    <p>高级别周是 9月22–28日，但封路和安保周界从 <b>9月19–20 这个周末</b>就开始布置，集中在第一大道和东 40 街一带。</p>
+    <p class="fix">你周六全程走地铁，<b>不受影响</b>。但这天不要指望在中城东侧打车去机场——那一带的车速在这一周是全年最慢的。E 线加 Q70 的方案是对的，别临时改主意。</p>
+  </div>
+
+  <div class="risk ok">
+    <h3><span class="tag t-ok">已排除</span>Yankees 三天全是客场</h3>
+    <p>9/17 休战日，9/18–20 客场打亚利桑那。你酒店离球场 1.8 公里，本来是最大的人流变量，这三天完全没有比赛。138 街一带按平日算。</p>
+  </div>
+
+  <div class="risk warn">
+    <h3><span class="tag t-warn">入住前确认</span>酒店年龄门槛两个平台写得不一样</h3>
+    <p>Expedia 页面写「住客需年满 18 岁」，Booking 同一家写「入住办理人需年满 21 岁」。矛盾。前台按酒店自己的规定执行。</p>
+    <p class="fix">到店被拒的话，钱和整个行程一起没。出发前打电话问一句，顺便确认周四能不能提前寄存行李。</p>
+  </div>
+
+  <div class="risk">
+    <h3>天气：三天都不用带厚衣服</h3>
+    <p>周四 27°C / 21°C，周五 28°C / 18°C，周六 21°C / 17°C，降水概率都在 10% 以下。</p>
+    <p class="fix"><b>周五早上 6:45 在店外等，气温约 18°C</b>——一件薄外套足够，不需要为此额外准备。雨要到周日才来（75%），那时你已经落地了。</p>
+  </div>
+
+  <div class="risk">
+    <h3>两个已知的时间软肋</h3>
+    <p><b>周四电影散场。</b>IMAX 70mm 片前长度不定，按 17:15 排。真到 17:30 才出来，Stüssy 段压缩到 50 分钟，仍然够，但散场别磨蹭。</p>
+    <p><b>周五 6:45 不是队首。</b>2023 年第五大道队首的人是前一晚 8 点到的。6:45 能看到开门和高管现身，但进不了前二十。这是不通宵的必然代价，已接受。</p>
+  </div>
+</section>
+
+<!-- ========== 3. 路线图 ========== -->
+<section>
+  <h2>路线图</h2>
+  <p class="sub">按地理顺序串成单向线，不折返。点任意站名唤起步行导航；底部按钮一次拉起当天全部站点。</p>
+  <div id="maps"></div>
+</section>
+
+<!-- ========== 4. 票务 ========== -->
+<section>
+  <h2>票务与订位</h2>
+  <p class="sub">确认号和二维码不放在这个页面上——这是公开网址。需要时去各自 App 里调。</p>
+  <div id="tickets"></div>
+</section>
+
+<!-- ========== 5. 逐日行程 ========== -->
+<section>
+  <h2>逐日行程</h2>
+  <p class="sub">左列时间，右列内容。标<span class="flag f-book">待预订</span>的要先动手，标<span class="flag f-close">闭店风险</span>的看清楚关门点。</p>
+  <div id="days"></div>
+</section>
+
+<!-- ========== 6. 待办 ========== -->
+<section>
+  <h2>待办</h2>
+  <p class="sub">出发前要处理完的事，按先后排。</p>
+  <ul class="plain">
+    <li><b>确认回程已改到周六 9/19</b><em>Delta App 查确认号 G3W4DT 的回程日期。这是唯一能让周六整天作废的事。</em></li>
+    <li><b>订周四早上的 Michigan Flyer</b><em>方向是 Liberty Square Garage → DTW McNamara，要一班约 6:45 前到机场的车。$11。注意去程表和回程表是两张表，别选反了。</em></li>
+    <li><b>查周六 DTW 回安娜堡的班次</b><em>16:52 落地，赶不上 16:45 那班。下一班可能要等到 20:30——周六时刻表和周四不一样，先查清楚，不行就直接叫车。</em></li>
+    <li><b>打电话给 Hotel 365 Bronx</b><em>问两件事：入住年龄是 18 还是 21；周四 12:15 能不能提前寄存行李。</em></li>
+    <li><b>Stüssy 官网先看 NY 限定款</b><em>店里只有一小时，还要排队。提前想好要什么，不然很容易空手出来。</em></li>
+    <li><b>周四带现金</b><em>San Gennaro 不少摊位只收现金。$40–60 足够。</em></li>
+    <li><b>统一用同一个支付方式刷地铁</b><em>OMNY 周上限是同一张卡累计满 12 次后当周免费。一会儿实体卡一会儿 Apple Pay 会被当成两个账户，次数不累加。</em></li>
+    <li><b>护照放随身包</b><em>国内航班的 TSA 证件。票面姓名是 Zhenkai Xu，和护照一致。酒店入住也要它。</em></li>
+    <li><b>周四早上 8:55 起飞，06:05 从公寓出发</b><em>关舱门 08:40。到 DTW 的目标时间是 06:55。</em></li>
+    <li><b>周五 5:15 的闹钟现在就设</b><em>这是整趟唯一不能睡过头的一天。</em></li>
+  </ul>
+</section>
+
+<!-- ========== 7. 贴士 ========== -->
+<section>
+  <h2>现场贴士</h2>
+
+  <div class="tip">
+    <h3>地铁直接刷，不用买票</h3>
+    <p>闸机上的黑色圆形读卡器，<b>Apple Pay 或 Visa 感应式卡刷一下就走</b>，跟伦敦一样。单程 $2.90，两小时内地铁换公交免费。</p>
+  </div>
+
+  <div class="tip">
+    <h3>三条地铁习惯</h3>
+    <p>别上空车厢——整列有人唯独一节空着，通常是那节有问题。<b>手机别在车门边玩</b>，关门瞬间抢手机是最常见的实际案件。深夜坐列车中部的列车员车厢，站台上有黑白条纹标志牌。</p>
+  </div>
+
+  <div class="tip">
+    <h3>大都会走 81 街入口</h3>
+    <p>正门那排台阶会把所有人灌进 Great Hall 排队。<b>81 街入口在地面层，人少，而且离埃及馆更近。</b>学生票 $17，密歇根的学生证就行，记得带。</p>
+  </div>
+
+  <div class="tip">
+    <h3>一兰的吃法</h3>
+    <p>平板点单拿票，进独立隔间，服务员从竹帘下方递碗。<b>加面（替玉）只要几块钱，但要提前留汤</b>，别一口气喝光。会给篮子放外套防沾味。经典豚骨 $24。</p>
+  </div>
+
+  <div class="tip">
+    <h3>周四晚 10 点，第五大道关门之后</h3>
+    <p>平时这家店 24 小时营业，<b>发售前夜会提前关门清场布置</b>。留在外面看他们搭什么：媒体台、摄影机位、加固护栏、地毯。有高管和没高管的现场规格完全不同——这是你判断第二天值不值得早起的唯一可靠信号。</p>
+  </div>
+
+  <div class="tip">
+    <h3>降级预案</h3>
+    <p>周四晚上什么都没搭，就别 5:15 起床了。<b>Apple Grand Central 周五也是 8:00 开门，排队的人少得多</b>，照样买得到机器，只是没有握手合影那一段。</p>
+  </div>
+
+  <div class="tip">
+    <h3>周六的硬时限</h3>
+    <p>14:55 起飞。<b>12:15 必须在 5 Av/53 St 站上 E 线</b>，这是留了缓冲之后的最晚出发时刻。错过就只能在中城打车，而那天正赶上联合国大会封路布设，中城东侧车速可能掉到步行水平。公园走超时就砍掉 Blue Bottle 直接走。</p>
+  </div>
+</section>
+
+<footer>
+  纽约行程手册 · 2026年9月17–19日 · 全部时刻为美东时间（EDT，UTC−4）<br>
+  票务状态与营业时间核查于 2026年9月16日。出发前请复核航班与门店时间。
+</footer>
+
+</div>
+
+<script>
+/* ============================================================
+   两个常量：改日期只改这里
+   ============================================================ */
+const TZ = '-04:00';                 // 美东夏令时 EDT
+const TRIP = { d1:'2026-09-17', d2:'2026-09-18', d3:'2026-09-19' };
+
+/* ============================================================
+   地点坐标（后续只改这一处）
+   ============================================================ */
+const P = {
+  home:      { n:'安娜堡公寓',              lat:42.2808, lng:-83.7382 },
+  dtw:       { n:'DTW McNamara 航站楼',     lat:42.2124, lng:-83.3534 },
+  lga:       { n:'LGA Terminal C',          lat:40.7743, lng:-73.8726 },
+  hotel:     { n:'Hotel 365 Bronx',         lat:40.8155, lng:-73.9270 },
+  amc:       { n:'AMC Lincoln Square 13',   lat:40.7754, lng:-73.9821 },
+  stussy:    { n:'Stüssy',                  lat:40.7232, lng:-73.9959 },
+  gennaro:   { n:'San Gennaro · Mulberry St',lat:40.7195, lng:-73.9971 },
+  ichiran:   { n:'一兰拉面 Times Square',    lat:40.7600, lng:-73.9833 },
+  apple5:    { n:'Apple Fifth Avenue',      lat:40.7638, lng:-73.9729 },
+  lv:        { n:'Louis Vuitton · 57 街',    lat:40.7628, lng:-73.9735 },
+  stpat:     { n:'圣帕特里克大教堂',          lat:40.7585, lng:-73.9760 },
+  rock:      { n:'洛克菲勒中心',              lat:40.7587, lng:-73.9787 },
+  bryant:    { n:'布莱恩特公园 · 公共图书馆',  lat:40.7536, lng:-73.9832 },
+  esb:       { n:'帝国大厦',                 lat:40.7484, lng:-73.9857 },
+  fishs:     { n:'Fishs Eddy',              lat:40.7387, lng:-73.9901 },
+  bbBryant:  { n:'Blue Bottle · Bryant Park',lat:40.7529, lng:-73.9842 },
+  appleGC:   { n:'Apple Grand Central',     lat:40.7527, lng:-73.9770 },
+  met:       { n:'大都会博物馆 · 81 街入口',  lat:40.7789, lng:-73.9637 },
+  napkin:    { n:'5 Napkin Burger',         lat:40.7601, lng:-73.9910 },
+  cpEnter:   { n:'中央公园 · 五大道 85 街口', lat:40.7815, lng:-73.9590 },
+  greatLawn: { n:'大草坪',                   lat:40.7812, lng:-73.9665 },
+  bethesda:  { n:'Bethesda Terrace',        lat:40.7740, lng:-73.9709 },
+  sheep:     { n:'Sheep Meadow',            lat:40.7712, lng:-73.9744 },
+  gapstow:   { n:'Gapstow Bridge',          lat:40.7669, lng:-73.9736 },
+  armyPlaza: { n:'Grand Army Plaza 出园',    lat:40.7644, lng:-73.9738 },
+  bbRock:    { n:'Blue Bottle · Rockefeller',lat:40.7582, lng:-73.9787 },
+  e53:       { n:'5 Av/53 St 站 E 线',       lat:40.7601, lng:-73.9752 }
+};
+
+/* ---------- Google 地图链接 ---------- */
+function walkTo(k){
+  const p = P[k];
+  return 'https://www.google.com/maps/dir/?api=1&destination='
+       + p.lat + ',' + p.lng + '&travelmode=walking';
+}
+function walkChain(keys){                       // 最多 9 个途经点
+  const o = P[keys[0]], d = P[keys[keys.length-1]];
+  const mid = keys.slice(1,-1).slice(0,9)
+              .map(k => P[k].lat + ',' + P[k].lng).join('%7C');
+  let u = 'https://www.google.com/maps/dir/?api=1&origin=' + o.lat + ',' + o.lng
+        + '&destination=' + d.lat + ',' + d.lng + '&travelmode=walking';
+  if (mid) u += '&waypoints=' + mid;
+  return u;
+}
+function pin(k, label){
+  return '<a class="pin" href="' + walkTo(k) + '" target="_blank" rel="noopener">'
+       + (label || P[k].n) + '</a>';
+}
+
+/* ============================================================
+   倒计时：写死时区偏移，不依赖设备时区
+   ============================================================ */
+const EVENTS = [
+  { t:TRIP.d1+'T06:05:00'+TZ, title:'从公寓出发去 DTW',        meta:'打车或 Michigan Flyer · 目标 06:55 到 McNamara' },
+  { t:TRIP.d1+'T08:55:00'+TZ, title:'DL1791 起飞 DTW → LGA',   meta:'关舱门 08:40 · A220-300 · 1 小时 46 分' },
+  { t:TRIP.d1+'T14:00:00'+TZ, title:'电影开场',                 meta:'AMC Lincoln Square 13 · IMAX 70mm · 2 小时 52 分' },
+  { t:TRIP.d1+'T17:50:00'+TZ, title:'Stüssy',                   meta:'50 Prince St · 19:00 关门' },
+  { t:TRIP.d1+'T20:45:00'+TZ, title:'Apple 第五大道 · 看关门布置', meta:'22:00 清场 · 这一晚决定明早起不起' },
+  { t:TRIP.d2+'T06:00:00'+TZ, title:'出发去第五大道',            meta:'4 号线 24 小时运行 · 目标 06:45 到场' },
+  { t:TRIP.d2+'T08:00:00'+TZ, title:'发售日开门',                meta:'Apple Fifth Avenue · 高管若现身就在这一刻' },
+  { t:TRIP.d2+'T11:20:00'+TZ, title:'Fishs Eddy 买伴手礼',        meta:'889 Broadway · 第五大道南下的终点 · 开到 20:00' },
+  { t:TRIP.d2+'T15:45:00'+TZ, title:'大都会博物馆',              meta:'走 81 街入口 · 学生票 $17 · 开到 21:00' },
+  { t:TRIP.d3+'T09:15:00'+TZ, title:'退房，行李带走',            meta:'不折返布朗克斯 · 直接进城' },
+  { t:TRIP.d3+'T12:15:00'+TZ, title:'最晚进站时刻',              meta:'5 Av/53 St 上 E 线 · 错过就只能打车' },
+  { t:TRIP.d3+'T14:55:00'+TZ, title:'DL308 起飞 LGA → DTW',     meta:'16:52 落地底特律' }
+];
+
+function tick(){
+  const now = Date.now();
+  const nx  = EVENTS.find(e => new Date(e.t).getTime() > now);
+  const T   = document.getElementById('nx-title');
+  const M   = document.getElementById('nx-meta');
+
+  if(!nx){
+    T.textContent = '行程已结束';
+    M.textContent = '回到安娜堡了。';
+    ['d','h','m','s'].forEach(k => document.getElementById('cd-'+k).textContent = '0');
+    return;
+  }
+  T.textContent = nx.title;
+  const dt = new Date(nx.t);
+  const wd = ['周日','周一','周二','周三','周四','周五','周六'][
+    new Date(nx.t.slice(0,10)+'T12:00:00'+TZ).getUTCDay()
+  ];
+  const hhmm = nx.t.slice(11,16);
+  M.textContent = wd + ' ' + nx.t.slice(5,7) + '月' + nx.t.slice(8,10) + '日 '
+                + hhmm + ' 美东 · ' + nx.meta;
+
+  let s = Math.max(0, Math.floor((dt.getTime() - now)/1000));
+  const d = Math.floor(s/86400); s -= d*86400;
+  const h = Math.floor(s/3600);  s -= h*3600;
+  const m = Math.floor(s/60);    s -= m*60;
+  const pad = v => String(v).padStart(2,'0');
+  document.getElementById('cd-d').textContent = d;
+  document.getElementById('cd-h').textContent = pad(h);
+  document.getElementById('cd-m').textContent = pad(m);
+  document.getElementById('cd-s').textContent = pad(s);
+}
+tick(); setInterval(tick, 1000);
+
+/* ============================================================
+   配色切换（不写入任何浏览器存储）
+   ============================================================ */
+let forced = null;
+document.getElementById('tbtn').addEventListener('click', function(){
+  const darkNow = forced
+    ? forced === 'dark'
+    : matchMedia('(prefers-color-scheme: dark)').matches;
+  forced = darkNow ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', forced);
+});
+
+/* ============================================================
+   路线图：手绘感 SVG（抖动滤镜只作用于线条与形状）
+   ============================================================ */
+const ROUTES = [
+  { day:'周四 9/17', legs:'步行合计约 3.6 公里',
+    chain:['hotel','amc','stussy','gennaro','ichiran','apple5'],
+    stops:[
+      {k:'hotel',   s:'酒店'},
+      {k:'amc',     s:'电影院'},
+      {k:'stussy',  s:'Stüssy'},
+      {k:'gennaro', s:'San Gennaro'},
+      {k:'ichiran', s:'一兰'},
+      {k:'apple5',  s:'第五大道'}
+    ]},
+  { day:'周五 9/18 上午 · 第五大道从 58 街直落 19 街', legs:'一路向南不折返，步行约 3.9 公里（全天约 7 公里）。终点 Fishs Eddy 之后坐 <span class="bullet b6">6</span> 线北上去 Grand Central。',
+    chain:['apple5','lv','stpat','rock','bryant','bbBryant','esb','fishs'],
+    stops:[
+      {k:'apple5',   s:'第五大道'},
+      {k:'lv',       s:'LV 57街'},
+      {k:'stpat',    s:'圣帕特里克'},
+      {k:'rock',     s:'洛克菲勒'},
+      {k:'bryant',   s:'布莱恩特'},
+      {k:'bbBryant', s:'Blue Bottle'},
+      {k:'esb',      s:'帝国大厦'},
+      {k:'fishs',    s:'Fishs Eddy'}
+    ]},
+  { day:'周六 9/19 · 中央公园纵穿', legs:'步行合计约 4.3 公里',
+    chain:['cpEnter','greatLawn','bethesda','sheep','gapstow','armyPlaza','bbRock'],
+    stops:[
+      {k:'cpEnter',   s:'85街入园'},
+      {k:'greatLawn', s:'大草坪'},
+      {k:'bethesda',  s:'Bethesda'},
+      {k:'sheep',     s:'Sheep Meadow'},
+      {k:'gapstow',   s:'Gapstow'},
+      {k:'armyPlaza', s:'59街出园'},
+      {k:'bbRock',    s:'Blue Bottle'}
+    ]}
+];
+
+function drawRoute(r, idx){
+  const W = 620, perRow = 4;
+  const rows = Math.ceil(r.stops.length / perRow);
+  const H = 44 + rows*104;
+  const pts = r.stops.map((st,i) => {
+    const row = Math.floor(i/perRow);
+    let col = i % perRow;
+    if (row % 2 === 1) col = perRow - 1 - col;        // 蛇形，不折返
+    return { x: 86 + col*150, y: 52 + row*104, st, i };
+  });
+
+  let path = '';
+  for(let i=0;i<pts.length-1;i++){
+    const a = pts[i], b = pts[i+1];
+    if (a.y === b.y){
+      path += `M${a.x} ${a.y} L${b.x} ${b.y} `;
+    } else {
+      const out = (a.x > (86 + 150*(perRow-1)/2)) ? 62 : -62;
+      path += `M${a.x} ${a.y} C${a.x+out} ${a.y+16}, ${b.x+out} ${b.y-42}, ${b.x} ${b.y} `;
+    }
+  }
+
+  const shapes = pts.map(p => `
+      <circle cx="${p.x}" cy="${p.y}" r="17" fill="var(--bg)" stroke="currentColor" stroke-width="2.4"/>`).join('');
+  const labels = pts.map(p => `
+      <text x="${p.x}" y="${p.y+5.5}" text-anchor="middle" font-size="14.5"
+            font-weight="700" fill="currentColor">${p.i+1}</text>
+      <text x="${p.x}" y="${p.y+36}" text-anchor="middle" font-size="12.5"
+            fill="currentColor" opacity=".72">${p.st.s}</text>`).join('');
+
+  return `
+  <div class="maproll">
+    <h3>${r.day}</h3>
+    <p class="legs">${r.legs}</p>
+    <svg class="route" viewBox="0 0 ${W} ${H}" role="img"
+         aria-label="${r.day} 路线：${r.stops.map(s=>s.s).join('，')}">
+      <defs>
+        <filter id="wob${idx}" x="-8%" y="-8%" width="116%" height="116%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.021"
+                        numOctaves="3" seed="${7+idx*13}" result="n"/>
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="3.4"
+                             xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+      </defs>
+      <g filter="url(#wob${idx})" fill="none" stroke="currentColor"
+         stroke-width="2.6" stroke-linecap="round">
+        <path d="${path}"/>
+      </g>
+      <g filter="url(#wob${idx})">${shapes}</g>
+      <g>${labels}</g>
+    </svg>
+    <a class="navbtn" href="${walkChain(r.chain)}" target="_blank" rel="noopener">
+      一键拉起这条线的全程步行导航
+    </a>
+  </div>`;
+}
+document.getElementById('maps').innerHTML = ROUTES.map(drawRoute).join('');
+
+/* ============================================================
+   票务
+   ============================================================ */
+const TICKETS = [
+  { n:'DL1791 · DTW → LGA', w:'周四 08:55 – 10:41',
+    st:'done', lab:'已出票',
+    l:['McNamara 航站楼出发，落地 LGA Terminal C。Airbus A220-300，1 小时 46 分。',
+       '关舱门 08:40。行李架偏大，Zone 8 登机也不太会被 gate-check。'] },
+  { n:'DL308 · LGA → DTW', w:'周六 14:55 – 16:52',
+    st:'chk', lab:'待确认改签',
+    l:['原票是周日 9/20，全部行程按改到周六排的。',
+       '<b>出发前务必在 Delta App 里确认回程日期已是 9 月 19 日。</b>'] },
+  { n:'Michigan Flyer · 安娜堡 → DTW', w:'周四 约 06:00',
+    st:'todo', lab:'待预订',
+    l:['Liberty Square Garage 发车，停 McNamara 值机层 1 号门外。$11。',
+       '需要一班约 06:45 前到机场的车。去程表和回程表是两张，别选反方向。'] },
+  { n:'Hotel 365 Bronx', w:'周四入住 / 周六退房',
+    st:'done', lab:'已订',
+    l:['346 Grand Concourse, Bronx, NY 10451 · ' + pin('hotel','地图'),
+       '两晚 $395.47 含税。入住 14:00，退房 11:00。<b>免费取消截止今天 9/16。</b>',
+       '138 街 <span class="bullet b4">4</span> 站步行 3 分钟，到 59 街快车 13 分钟。'] },
+  { n:'AMC Lincoln Square 13', w:'周四 14:00',
+    st:'done', lab:'已出票',
+    l:['1998 Broadway · ' + pin('amc','地图') + ' · IMAX 70MM · 2 小时 52 分',
+       '<b>目标 13:50 到场。</b>片前 15–25 分钟，70mm 场次通常更短，别按 30 分钟算。'] },
+  { n:'大都会博物馆 · 学生票', w:'周五 全天通票',
+    st:'done', lab:'已出票',
+    l:['1000 Fifth Ave · ' + pin('met','81 街入口') + ' · $17',
+       '周五开到 21:00（平日 17:00 就关）。<b>入场要出示学生证</b>，密歇根的就行。'] },
+  { n:'Stüssy / 一兰 / 5 Napkin', w:'均不接受预订',
+    st:'chk', lab:'现场排队',
+    l:['Stüssy 11:00–19:00 · <a href="tel:+16463604788">646-360-4788</a> · 排队 20–45 分钟',
+       '一兰 Times Square 11:00–22:30 · <a href="tel:+16469644294">646-964-4294</a>',
+       '5 Napkin Burger 周五 10:00–23:30 · <a href="tel:+12127572277">212-757-2277</a>'] }
+];
+document.getElementById('tickets').innerHTML = TICKETS.map(t => `
+  <div class="tk">
+    <div class="tk-top">
+      <p class="tk-name">${t.n}</p>
+      <div class="tk-when">${t.w}</div>
+    </div>
+    <p class="tk-line"><span class="st st-${t.st}">${t.lab}</span></p>
+    ${t.l.map(x => '<p class="tk-line">'+x+'</p>').join('')}
+  </div>`).join('');
+
+/* ============================================================
+   逐日行程
+   ============================================================ */
+const DAYS = [
+  { h:'周四 9月17日', sub:'落地日 · 步行约 3.6 公里<br>最高 27°C / 最低 21°C · 降水 10%', rows:[
+    ['06:05','从安娜堡公寓出发','打车 45 分钟，或走 Michigan Flyer。目标 06:55 到 McNamara。',''],
+    ['08:55','DL1791 起飞','关舱门 08:40。座位值机时才分配。',''],
+    ['10:41','LGA Terminal C 落地','',''],
+    ['11:10','<span class="bullet bbus">M60 SBS</span> 巴士进城','$2.90，到 125 街换 <span class="bullet b4">4</span> 号线北上一站。',''],
+    ['12:15','酒店寄存行李','入住是 14:00，但前台通常能先存。顺手买点东西垫一下。','book'],
+    ['13:10','出发去林肯中心','149 街 <span class="bullet b2">2</span> 线到 96 街，换 <span class="bullet b1">1</span> 线到 66 街。',''],
+    ['13:50','到 '+P.amc.n,'提前 10 分钟。IMAX 厅大，摸黑找 B32 很狼狈。'+' '+pin('amc','导航'),'core'],
+    ['14:00','电影','2 小时 52 分。',''],
+    ['17:15','散场，直接走','<span class="bullet b1">1</span> 线 66 街 → Houston St，出站走 9 分钟。',''],
+    ['17:50',pin('stussy','Stüssy'),'50 Prince St。<b>19:00 关门</b>，你有 70 分钟缓冲。周中傍晚是这家店人最少的时段。','close'],
+    ['18:50',pin('gennaro','San Gennaro 百年庆典'),'就在 Stüssy 门口的 Mulberry 街。开幕日，封街到 23:30。走 20 分钟，吃点东西。<b>带现金。</b>',''],
+    ['19:30',pin('ichiran','一兰拉面 Times Square'),'Prince St <span class="bullet bnr">N</span> 到 49 街，出站 4 分钟。经典豚骨 $24，排队 20–40 分钟。','close'],
+    ['20:45',pin('apple5','Apple 第五大道'),'先进店逛。<b>然后留在外面看 22:00 关门之后搭什么</b>——媒体台、摄影位、护栏、地毯。这是判断明早的唯一信号。','core'],
+    ['22:40','回酒店','59 街 <span class="bullet b4">4</span> 号线直达 138 街。',''] ]},
+
+  { h:'周五 9月18日', sub:'发售日 · 步行约 7 公里<br>最高 28°C / 最低 18°C · 降水 5%', rows:[
+    ['05:15','起床','昨晚只睡 6 小时。今天是唯一不能睡过头的一天。',''],
+    ['06:00','出发','<span class="bullet b4">4</span> 号线 24 小时运行。',''],
+    ['06:45',pin('apple5','到 Apple 第五大道排队'),'外面约 18°C，薄外套够。进不了前二十，但看得到开门。','core'],
+    ['08:00','开门','高管若现身就是这一刻，停留十几到二十分钟。','core'],
+    ['09:20','沿第五大道一路向南','从 58 街直落 19 街，全程一条直线，不折返。',''],
+    ['09:25',pin('lv','Louis Vuitton · 57 街'),'旗舰店通常 10:00 后才开门。这个点看外观和橱窗，街上没人。',''],
+    ['09:35',pin('stpat','圣帕特里克大教堂'),'50 街，可入内。',''],
+    ['09:45',pin('rock','洛克菲勒中心'),'49 街。',''],
+    ['10:00',pin('bryant','布莱恩特公园 · 公共图书馆'),'42 街。',''],
+    ['10:05',pin('bbBryant','Blue Bottle · Bryant Park'),'54 W 40th St，就在公园西南角。<b>早饭在这儿解决</b>，坐下来休息 45 分钟。',''],
+    ['11:00',pin('esb','帝国大厦'),'34 街。外观打卡，不上楼。',''],
+    ['11:20',pin('fishs','Fishs Eddy'),'889 Broadway，19 街。4.6 分／1,680 条。纽约天际线玻璃杯、复古餐车餐盘这类本地纪念品，<b>买伴手礼最合适的一家</b>。周五 10:00–20:00。','close'],
+    ['12:00','23 街站坐 <span class="bullet b6">6</span> 线北上','三站到中央车站，7 分钟。',''],
+    ['12:15',pin('appleGC','Apple Grand Central'),'二楼回廊俯瞰大厅，外墙连招牌都不许挂。周五 08:00–20:00。',''],
+    ['12:55','中央车站换 <span class="bullet b4">4</span> 号线','直达 138 街，不用再换乘。',''],
+    ['13:30','回酒店补觉','<b>睡到 15:15。</b>不睡的话晚上在大都会会崩。',''],
+    ['15:45',pin('met','大都会博物馆'),'81 街入口。带学生证走 $17。周五开到 21:00，傍晚人最少。','core'],
+    ['19:30','离馆',' <span class="bullet b6">6</span> 线南下转西行去地狱厨房。',''],
+    ['20:00',pin('napkin','5 Napkin Burger'),'630 9th Ave，4.6 分。9 大道是曼哈顿餐厅密度最高的一条街，排队就换隔壁。',''],
+    ['21:30','回酒店','',''] ]},
+
+  { h:'周六 9月19日', sub:'半日 + 赶飞机 · 步行约 4.3 公里<br>最高 21°C / 最低 17°C · 降水 10%', rows:[
+    ['08:30','自然醒','',''],
+    ['09:15','退房，行李带走','<b>不寄存、不折返布朗克斯。</b>园内全是铺装步道，拉杆箱没问题。',''],
+    ['09:30','<span class="bullet b4">4</span> 号线 138 街 → 86 街','15 分钟。',''],
+    ['09:50',pin('cpEnter','中央公园 · 五大道 85 街口'),'入园。',''],
+    ['10:10',pin('greatLawn','大草坪'),'',''],
+    ['10:30',pin('bethesda','Bethesda Terrace'),'公园里最值得站一会儿的地方。',''],
+    ['10:50',pin('sheep','Sheep Meadow'),'',''],
+    ['11:10',pin('gapstow','Gapstow Bridge'),'',''],
+    ['11:25',pin('armyPlaza','Grand Army Plaza 出园'),'59 街。最后看一眼对面的 Apple 第五大道。',''],
+    ['11:35',pin('bbRock','Blue Bottle · Rockefeller Center'),'1 Rockefeller Plaza，4.4 分，全纽约最稳的一家。周六 08:00 开门。',''],
+    ['12:15',pin('e53','5 Av/53 St 站上 <span class="bullet be">E</span> 线'),'<b>这是硬时限。</b>公园走超时就砍掉咖啡直接来。',''],
+    ['12:45','Jackson Heights 换 <span class="bullet bbus">Q70</span>','免费机场专线，10 分钟到 LGA。',''],
+    ['13:00','到 LGA','提前近两小时。',''],
+    ['14:55','DL308 起飞','16:52 落地 DTW。回安娜堡的班次要提前查——16:45 那班赶不上。','book'] ]}
+];
+
+document.getElementById('days').innerHTML = DAYS.map(d => `
+  <div class="day">
+    <div class="day-h"><b>${d.h}</b><span>${d.sub}</span></div>
+    <ol class="tl">
+      ${d.rows.map(r => `
+      <li>
+        <div class="t${r[0].length>5?' soft':''}">${r[0]}</div>
+        <div class="c">
+          <strong>${r[1]}</strong>
+          ${r[2] ? '<p>'+r[2]+'</p>' : ''}
+          ${r[3]==='book'  ? '<span class="flag f-book">待预订</span>'   : ''}
+          ${r[3]==='close' ? '<span class="flag f-close">闭店风险</span>' : ''}
+          ${r[3]==='core'  ? '<span class="flag f-core">核心</span>'     : ''}
+        </div>
+      </li>`).join('')}
+    </ol>
+  </div>`).join('');
+</script>
+</body>
+</html>
